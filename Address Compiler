@@ -1,0 +1,50 @@
+import pandas as pd
+import openpyxl
+import docx
+import re
+from collections import OrderedDict
+
+def read_addresses_from_xlsx(file_path):
+    df = pd.read_excel(file_path)
+    addresses = df.values.flatten().tolist()
+    return addresses
+
+def read_addresses_from_docx(file_path):
+    doc = docx.Document(file_path)
+    addresses = []
+    for para in doc.paragraphs:
+        addresses.append(para.text)
+    return addresses
+
+def normalize_address(address):
+    address = address.upper()
+    address = re.sub(r'\bRD\b', 'ROAD', address)
+    address = re.sub(r'\bDR\b', 'DRIVE', address)
+    address = re.sub(r'\bST\b', 'STREET', address)
+    address = re.sub(r'\bAVE\b', 'AVENUE', address)
+    return address
+
+def remove_duplicates(addresses):
+    normalized_addresses = [normalize_address(addr) for addr in addresses]
+    unique_addresses = list(OrderedDict.fromkeys(normalized_addresses))
+    return unique_addresses
+
+def write_addresses_to_xlsx(addresses, output_file):
+    df = pd.DataFrame(addresses, columns=["Mailing Address"])
+    df.to_excel(output_file, index=False)
+
+def main():
+    input_files = ['file1.xlsx', 'file2.docx']  # Add your input files here
+    all_addresses = []
+
+    for file in input_files:
+        if file.endswith('.xlsx'):
+            all_addresses.extend(read_addresses_from_xlsx(file))
+        elif file.endswith('.docx'):
+            all_addresses.extend(read_addresses_from_docx(file))
+
+    unique_addresses = remove_duplicates(all_addresses)
+    write_addresses_to_xlsx(unique_addresses, 'output.xlsx')
+
+if __name__ == "__main__":
+    main()
